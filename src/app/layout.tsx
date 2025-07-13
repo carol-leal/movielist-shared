@@ -5,7 +5,10 @@ import { type Metadata } from "next";
 import { TRPCReactProvider } from "~/trpc/react";
 
 import "@radix-ui/themes/styles.css";
-import { Theme, ThemePanel } from "@radix-ui/themes";
+import { Container, Flex, Heading, Theme, ThemePanel } from "@radix-ui/themes";
+import { UserAvatar } from "./_components/userAvatar";
+import { auth } from "~/server/auth";
+import { api, HydrateClient } from "~/trpc/server";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -13,16 +16,30 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await auth();
+
+  if (session?.user) {
+    void api.list.getAll.prefetch();
+  }
   return (
     <html lang="en">
       <body>
         <TRPCReactProvider>
           <Theme appearance="dark">
-            <ThemePanel />
-            {children}
+            <Container>
+              <Flex justify="between" align="center" gap="4">
+                <Heading>Movie List App</Heading>
+                <UserAvatar
+                  image={session?.user.image ?? undefined}
+                  session={!!session}
+                />
+              </Flex>
+              {/*<ThemePanel />*/}
+              {children}
+            </Container>
           </Theme>
         </TRPCReactProvider>
       </body>

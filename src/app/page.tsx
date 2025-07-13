@@ -1,39 +1,13 @@
-import { Container, Text, Heading, Button } from "@radix-ui/themes";
-import Link from "next/link";
+// src/app/page.tsx
 import { auth } from "~/server/auth";
-import { api, HydrateClient } from "~/trpc/server";
+import { api } from "~/trpc/server";
+import { HydrateClient } from "~/trpc/server";
+import Dashboard from "./_components/dashboard";
 
-export default async function Home() {
-  const session = await auth();
-
-  if (session?.user) {
-    void api.list.getAll.prefetch();
-  }
-
-  const list = [
-    {
-      slug: "my-movie-list",
-      title: "My Movie List",
-      description: "A list of my favorite movies.",
-    },
-    {
-      slug: "watch-later",
-      title: "Watch Later",
-      description: "Movies I plan to watch in the future.",
-    },
-  ];
-
+export default async function HomePage() {
   return (
     <HydrateClient>
-      <Container>
-        <Heading>Welcome to the Movie List App!</Heading>
-        <Text>Select a list to access</Text>
-        {list.map((item) => (
-          <Button key={item.slug}>
-            <Link href={`/list/${item.slug}`}>Go to {item.title}</Link>
-          </Button>
-        ))}
-      </Container>
+      <Dashboard />
     </HydrateClient>
   );
 }
