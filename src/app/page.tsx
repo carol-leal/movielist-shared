@@ -1,70 +1,39 @@
+import { Container, Text, Heading, Button } from "@radix-ui/themes";
 import Link from "next/link";
-
-import { LatestPost } from "~/app/_components/post";
 import { auth } from "~/server/auth";
 import { api, HydrateClient } from "~/trpc/server";
-import styles from "./index.module.css";
 
 export default async function Home() {
-  const hello = await api.post.hello({ text: "from tRPC" });
   const session = await auth();
 
   if (session?.user) {
-    void api.post.getLatest.prefetch();
+    void api.list.getAll.prefetch();
   }
+
+  const list = [
+    {
+      slug: "my-movie-list",
+      title: "My Movie List",
+      description: "A list of my favorite movies.",
+    },
+    {
+      slug: "watch-later",
+      title: "Watch Later",
+      description: "Movies I plan to watch in the future.",
+    },
+  ];
 
   return (
     <HydrateClient>
-      <main className={styles.main}>
-        <div className={styles.container}>
-          <h1 className={styles.title}>
-            Create <span className={styles.pinkSpan}>T3</span> App
-          </h1>
-          <div className={styles.cardRow}>
-            <Link
-              className={styles.card}
-              href="https://create.t3.gg/en/usage/first-steps"
-              target="_blank"
-            >
-              <h3 className={styles.cardTitle}>First Steps →</h3>
-              <div className={styles.cardText}>
-                Just the basics - Everything you need to know to set up your
-                database and authentication.
-              </div>
-            </Link>
-            <Link
-              className={styles.card}
-              href="https://create.t3.gg/en/introduction"
-              target="_blank"
-            >
-              <h3 className={styles.cardTitle}>Documentation →</h3>
-              <div className={styles.cardText}>
-                Learn more about Create T3 App, the libraries it uses, and how
-                to deploy it.
-              </div>
-            </Link>
-          </div>
-          <div className={styles.showcaseContainer}>
-            <p className={styles.showcaseText}>
-              {hello ? hello.greeting : "Loading tRPC query..."}
-            </p>
-
-            <div className={styles.authContainer}>
-              <p className={styles.showcaseText}>
-                {session && <span>Logged in as {session.user?.name}</span>}
-              </p>
-              <Link
-                href={session ? "/api/auth/signout" : "/api/auth/signin"}
-                className={styles.loginButton}
-              >
-                {session ? "Sign out" : "Sign in"}
-              </Link>
-            </div>
-          </div>
-
-          {session?.user && <LatestPost />}
-        </div>
-      </main>
+      <Container>
+        <Heading>Welcome to the Movie List App!</Heading>
+        <Text>Select a list to access</Text>
+        {list.map((item) => (
+          <Button key={item.slug}>
+            <Link href={`/list/${item.slug}`}>Go to {item.title}</Link>
+          </Button>
+        ))}
+      </Container>
     </HydrateClient>
   );
 }

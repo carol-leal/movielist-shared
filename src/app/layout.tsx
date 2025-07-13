@@ -1,9 +1,11 @@
 import "~/styles/globals.css";
 
 import { type Metadata } from "next";
-import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
+
+import "@radix-ui/themes/styles.css";
+import { Theme, ThemePanel } from "@radix-ui/themes";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -11,17 +13,18 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-const geist = Geist({
-  subsets: ["latin"],
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={geist.className}>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+      <body>
+        <TRPCReactProvider>
+          <Theme appearance="dark">
+            <ThemePanel />
+            {children}
+          </Theme>
+        </TRPCReactProvider>
       </body>
     </html>
   );
