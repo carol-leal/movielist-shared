@@ -8,7 +8,7 @@ import "@radix-ui/themes/styles.css";
 import { Container, Flex, Heading, Theme, ThemePanel } from "@radix-ui/themes";
 import { UserAvatar } from "./_components/userAvatar";
 import { auth } from "~/server/auth";
-import { api, HydrateClient } from "~/trpc/server";
+import { api } from "~/trpc/server";
 
 export const metadata: Metadata = {
   title: "Create T3 App",

@@ -10,10 +10,14 @@ import {
   Popover,
   TextArea,
   Spinner,
+  TextField,
 } from "@radix-ui/themes";
 import Link from "next/link";
 import { api as apiReact } from "~/trpc/react";
 import { Form } from "radix-ui";
+import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { searchMovie } from "../api/tmdb/searchMovie";
+import { useState } from "react";
 
 export default function Dashboard() {
   const utils = apiReact.useUtils();
@@ -26,8 +30,25 @@ export default function Dashboard() {
 
   const { data: myLists, isLoading } = apiReact.list.getAll.useQuery();
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   return (
     <Flex direction="column" gap="4">
+      <TextField.Root
+        placeholder="Search for a movie..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          searchMovie(searchQuery);
+        }}
+      >
+        <TextField.Slot>
+          <MagnifyingGlassIcon height="16" width="16" />
+        </TextField.Slot>
+      </TextField.Root>
+
       <Flex justify="between" align="center" gap="2">
         <Text>Select a list: </Text>
         <Popover.Root>

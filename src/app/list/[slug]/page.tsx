@@ -1,6 +1,15 @@
 import Link from "next/link";
-import { Text } from "@radix-ui/themes";
-import { HydrateClient } from "~/trpc/server";
+import {
+  Box,
+  Card,
+  Flex,
+  Grid,
+  Inset,
+  Strong,
+  Text,
+  TextField,
+} from "@radix-ui/themes";
+import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 export default async function Page({
   params,
 }: {
@@ -8,32 +17,42 @@ export default async function Page({
 }) {
   const { slug } = await params;
   return (
-    <HydrateClient>
-      <Text>This is {slug}</Text>
-      <main>
-        <h1>
-          Create <span>T3</span> App
-        </h1>
-        <div>
-          <Link
-            href="https://create.t3.gg/en/usage/first-steps"
-            target="_blank"
-          >
-            <h3>First Steps →</h3>
-            <div>
-              Just the basics - Everything you need to know to set up your
-              database and authentication.
-            </div>
-          </Link>
-          <Link href="https://create.t3.gg/en/introduction" target="_blank">
-            <h3>Documentation →</h3>
-            <div>
-              Learn more about Create T3 App, the libraries it uses, and how to
-              deploy it.
-            </div>
-          </Link>
-        </div>
-      </main>
-    </HydrateClient>
+    <Flex direction="column" gap="4">
+      <Flex direction="row" gap="4" justify="between">
+        <Text>This is {slug}</Text>
+        <Link href="/">Go back to dashboard</Link>
+      </Flex>
+      <TextField.Root placeholder="Search the list...">
+        <TextField.Slot>
+          <MagnifyingGlassIcon height="16" width="16" />
+        </TextField.Slot>
+      </TextField.Root>
+      <Flex>
+        <Grid columns="3" gap="3" rows="repeat(2, 64px)" width="auto">
+          <Box maxWidth="240px">
+            <Card size="2">
+              <Inset clip="padding-box" side="top" pb="current">
+                <img
+                  src="https://images.unsplash.com/photo-1617050318658-a9a3175e34cb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80"
+                  alt="Bold typography"
+                  style={{
+                    display: "block",
+                    objectFit: "cover",
+                    width: "100%",
+                    height: 140,
+                    backgroundColor: "var(--gray-5)",
+                  }}
+                />
+              </Inset>
+              <Text as="p" size="3">
+                <Strong>Typography</Strong> is the art and technique of
+                arranging type to make written language legible, readable and
+                appealing when displayed.
+              </Text>
+            </Card>
+          </Box>
+        </Grid>
+      </Flex>
+    </Flex>
   );
 }
