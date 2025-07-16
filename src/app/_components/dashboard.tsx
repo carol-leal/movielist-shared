@@ -8,38 +8,23 @@ import {
   Spinner,
   Inset,
   Separator,
+  Box,
 } from "@radix-ui/themes";
 import Link from "next/link";
 import { api as apiReact } from "~/trpc/react";
 import { searchMovie } from "../api/tmdb/searchMovie";
+import { fetchAllGenres } from "../api/tmdb/fetchAllGenres";
 import Search from "./dashboard/search";
 import NewList from "./dashboard/newList";
-
-import { useEffect, useState } from "react";
-import type { Movie } from "~/types/general";
-import Image from "next/image";
-import { formatDate } from "~/utils/helpers";
 import Rating from "./dashboard/rating";
-import { fetchAllGenres } from "../api/tmdb/fetchAllGenres";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import type { Movie } from "~/types/general";
+import { formatDate } from "~/utils/helpers";
 
 export default function Dashboard() {
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
   const [genreMap, setGenreMap] = useState<Record<number, string>>({});
-
-  useEffect(() => {
-    async function loadGenres() {
-      const result = await fetchAllGenres();
-      if (result?.genres) {
-        const map: Record<number, string> = {};
-        result.genres.forEach((genre) => {
-          map[genre.id] = genre.name;
-        });
-        setGenreMap(map);
-      }
-    }
-
-    void loadGenres();
-  }, []);
 
   const utils = apiReact.useUtils();
   const createList = apiReact.list.create.useMutation({
@@ -51,32 +36,49 @@ export default function Dashboard() {
 
   const { data: myLists, isLoading } = apiReact.list.getAll.useQuery();
 
+  useEffect(() => {
+    void (async () => {
+      const result = await fetchAllGenres();
+      if (result?.genres) {
+        const map: Record<number, string> = {};
+        result.genres.forEach((g) => {
+          map[g.id] = g.name;
+        });
+        setGenreMap(map);
+      }
+    })();
+  }, []);
+
   const onSearch = async (query: string) => {
     const result = await searchMovie(query);
-    if (result?.results) {
-      setSearchResults(result.results);
-    } else {
-      setSearchResults([]);
-    }
+    setSearchResults(result?.results ?? []);
   };
 
-  console.log("Search Results:", searchResults);
-
   return (
-    <Flex direction="column" gap="4">
+    <Flex direction="column" gap="6" px={{ initial: "4", md: "6" }} py="5">
       <Search onSearch={onSearch} />
-      <Flex justify="between" align="center" gap="2">
-        <Text>Select a list: </Text>
+
+      <Flex justify="between" align="center" wrap="wrap" gap="3">
+        <Text>Select a list:</Text>
         <NewList createList={createList} />
       </Flex>
 
-      <Heading size="3">Search Results</Heading>
+      <Heading size="4">Search Results</Heading>
+
       {searchResults.length > 0 ? (
-        <Grid columns="3" gap="3">
+        <Grid columns={{ initial: "1", sm: "2", md: "3" }} gap="4" width="100%">
           {searchResults.map((movie) => (
-            <Card key={movie.id}>
+            <Card
+              key={movie.id}
+              size="2"
+              style={{
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Inset side="top" clip="padding-box" pb="current">
-                <div style={{ position: "relative" }}>
+                <Box position="relative">
                   <Image
                     src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                     alt={movie.title}
@@ -91,17 +93,34 @@ export default function Dashboard() {
                     }}
                   />
                   <Rating rating={movie.vote_average} />
-                </div>
+                </Box>
               </Inset>
-              <Heading size="2">{movie.title}</Heading>
-              <Text>Release date: {formatDate(movie.release_date)}</Text>
-              <Text>{movie.overview}</Text>
-              <Text size="2">
-                <Flex gap="3" align="center" wrap="wrap">
-                  <Text color="gray">Genres:</Text>
+
+              <Box style={{ flexGrow: 1, paddingTop: "1rem" }}>
+                <Flex direction="column" gap="2">
+                  <Heading size="3">{movie.title}</Heading>
+
+                  <Text size="1" color="gray">
+                    Release date: {formatDate(movie.release_date)}
+                  </Text>
+
+                  <Text size="2">{movie.overview}</Text>
+                </Flex>
+              </Box>
+
+              <Box mt="3">
+                <Flex gap="2" align="center" wrap="wrap">
+                  <Text size="1" color="gray">
+                    Genres:
+                  </Text>
                   {movie.genre_ids && movie.genre_ids.length > 0 ? (
                     movie.genre_ids.flatMap((id, index, array) => [
-                      <Text key={`genre-${id}`} size="1">
+                      <Text
+                        key={`genre-${id}`}
+                        size="1"
+                        weight="medium"
+                        color="plum"
+                      >
                         {genreMap[id] ?? "Unknown"}
                       </Text>,
                       index < array.length - 1 ? (
@@ -114,24 +133,35 @@ export default function Dashboard() {
                     </Text>
                   )}
                 </Flex>
-              </Text>
+              </Box>
             </Card>
           ))}
         </Grid>
       ) : (
-        <Text>No movies found. Try another search.</Text>
+        <Text color="gray">No movies found. Try another search.</Text>
       )}
 
-      <Heading size="3">My Lists</Heading>
-      <Grid columns="3" gap="3">
+      <Heading size="4" mt="6">
+        My Lists
+      </Heading>
+
+      <Grid columns={{ initial: "1", sm: "2", md: "3" }} gap="4">
         {isLoading ? (
           <Spinner size="3" />
-        ) : myLists && myLists.length > 0 ? (
+        ) : myLists?.length ? (
           myLists.map((item) => (
-            <Link href={`/list/${encodeURIComponent(item.name)}`} key={item.id}>
-              <Card>
-                <Heading size="2">{item.name}</Heading>
-                <Text>{item.description}</Text>
+            <Link
+              href={`/list/${encodeURIComponent(item.name)}`}
+              key={item.id}
+              passHref
+            >
+              <Card asChild>
+                <a>
+                  <Flex direction="column" gap="2">
+                    <Heading size="3">{item.name}</Heading>
+                    <Text>{item.description}</Text>
+                  </Flex>
+                </a>
               </Card>
             </Link>
           ))
