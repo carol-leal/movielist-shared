@@ -1,4 +1,8 @@
-export const searchMovie = async (query: string) => {
+import type { SearchMovieResponse } from "~/types/general";
+
+export const searchMovie = async (
+  query: string,
+): Promise<SearchMovieResponse | null> => {
   const options = {
     method: "GET",
     headers: {
@@ -7,11 +11,22 @@ export const searchMovie = async (query: string) => {
     },
   };
 
-  fetch(
-    `https://api.themoviedb.org/3/search/movie?query=${query}&language=en-US&page=1`,
-    options,
-  )
-    .then((res) => res.json())
-    .then((res) => console.log(res))
-    .catch((err) => console.error(err));
+  try {
+    const encodedQuery = encodeURIComponent(query);
+    const response = await fetch(
+      `https://api.themoviedb.org/3/search/movie?query=${encodedQuery}&language=en-US&page=1`,
+      options,
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = (await response.json()) as unknown as SearchMovieResponse;
+
+    return data;
+  } catch (error) {
+    console.error("Failed to fetch movie data:", error);
+    return null;
+  }
 };

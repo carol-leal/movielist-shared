@@ -1,25 +1,46 @@
 "use client";
-
 import {
   Text,
   Heading,
-  Button,
   Flex,
   Grid,
   Card,
-  Popover,
-  TextArea,
   Spinner,
-  TextField,
+  Inset,
+  Separator,
 } from "@radix-ui/themes";
 import Link from "next/link";
 import { api as apiReact } from "~/trpc/react";
-import { Form } from "radix-ui";
-import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { searchMovie } from "../api/tmdb/searchMovie";
-import { useState } from "react";
+import Search from "./dashboard/search";
+import NewList from "./dashboard/newList";
+
+import { useEffect, useState } from "react";
+import type { Movie } from "~/types/general";
+import Image from "next/image";
+import { formatDate } from "~/utils/helpers";
+import Rating from "./dashboard/rating";
+import { fetchAllGenres } from "../api/tmdb/fetchAllGenres";
 
 export default function Dashboard() {
+  const [searchResults, setSearchResults] = useState<Movie[]>([]);
+  const [genreMap, setGenreMap] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    async function loadGenres() {
+      const result = await fetchAllGenres();
+      if (result?.genres) {
+        const map: Record<number, string> = {};
+        result.genres.forEach((genre) => {
+          map[genre.id] = genre.name;
+        });
+        setGenreMap(map);
+      }
+    }
+
+    void loadGenres();
+  }, []);
+
   const utils = apiReact.useUtils();
   const createList = apiReact.list.create.useMutation({
     onSuccess: async () => {
@@ -30,61 +51,78 @@ export default function Dashboard() {
 
   const { data: myLists, isLoading } = apiReact.list.getAll.useQuery();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const onSearch = async (query: string) => {
+    const result = await searchMovie(query);
+    if (result?.results) {
+      setSearchResults(result.results);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  console.log("Search Results:", searchResults);
 
   return (
     <Flex direction="column" gap="4">
-      <TextField.Root
-        placeholder="Search for a movie..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter") return;
-          e.preventDefault();
-          searchMovie(searchQuery);
-        }}
-      >
-        <TextField.Slot>
-          <MagnifyingGlassIcon height="16" width="16" />
-        </TextField.Slot>
-      </TextField.Root>
-
+      <Search onSearch={onSearch} />
       <Flex justify="between" align="center" gap="2">
         <Text>Select a list: </Text>
-        <Popover.Root>
-          <Popover.Trigger>
-            <Button variant="soft">New list</Button>
-          </Popover.Trigger>
-          <Popover.Content width="360px">
-            <Form.Root
-              onSubmit={async (event) => {
-                const formData = new FormData(event.currentTarget);
-                const name = formData.get("name") as string;
-                const description = formData.get("description") as string;
-                createList.mutate({ name, description });
-                event.currentTarget.reset();
-              }}
-            >
-              <Form.Field name="name">
-                <Form.Label>Name</Form.Label>
-                <Form.Control asChild>
-                  <input className="Input" type="text" required />
-                </Form.Control>
-              </Form.Field>
-              <Form.Field name="description">
-                <Form.Label>Description</Form.Label>
-                <Form.Control asChild>
-                  <TextArea className="Input" />
-                </Form.Control>
-              </Form.Field>
-              <Form.Submit asChild>
-                <Button style={{ marginTop: 10 }}>Create List</Button>
-              </Form.Submit>
-            </Form.Root>
-          </Popover.Content>
-        </Popover.Root>
+        <NewList createList={createList} />
       </Flex>
 
+      <Heading size="3">Search Results</Heading>
+      {searchResults.length > 0 ? (
+        <Grid columns="3" gap="3">
+          {searchResults.map((movie) => (
+            <Card key={movie.id}>
+              <Inset side="top" clip="padding-box" pb="current">
+                <div style={{ position: "relative" }}>
+                  <Image
+                    src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                    alt={movie.title}
+                    width={500}
+                    height={750}
+                    style={{
+                      display: "block",
+                      objectFit: "cover",
+                      width: "100%",
+                      height: "100%",
+                      backgroundColor: "var(--gray-5)",
+                    }}
+                  />
+                  <Rating rating={movie.vote_average} />
+                </div>
+              </Inset>
+              <Heading size="2">{movie.title}</Heading>
+              <Text>Release date: {formatDate(movie.release_date)}</Text>
+              <Text>{movie.overview}</Text>
+              <Text size="2">
+                <Flex gap="3" align="center" wrap="wrap">
+                  <Text color="gray">Genres:</Text>
+                  {movie.genre_ids && movie.genre_ids.length > 0 ? (
+                    movie.genre_ids.flatMap((id, index, array) => [
+                      <Text key={`genre-${id}`} size="1">
+                        {genreMap[id] ?? "Unknown"}
+                      </Text>,
+                      index < array.length - 1 ? (
+                        <Separator key={`sep-${id}`} orientation="vertical" />
+                      ) : null,
+                    ])
+                  ) : (
+                    <Text size="1" color="gray">
+                      None
+                    </Text>
+                  )}
+                </Flex>
+              </Text>
+            </Card>
+          ))}
+        </Grid>
+      ) : (
+        <Text>No movies found. Try another search.</Text>
+      )}
+
+      <Heading size="3">My Lists</Heading>
       <Grid columns="3" gap="3">
         {isLoading ? (
           <Spinner size="3" />
