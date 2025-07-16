@@ -62,7 +62,47 @@ export default function Dashboard() {
         <Text>Select a list:</Text>
         <NewList createList={createList} />
       </Flex>
+      <Heading size="4" mt="6">
+        My Lists
+      </Heading>
 
+      {isLoading ? (
+        <Flex justify="center" align="center" height="100px">
+          <Spinner size="3" />
+        </Flex>
+      ) : myLists?.length ? (
+        <Grid columns={{ initial: "1", sm: "2", md: "3" }} gap="4">
+          {myLists.map((item) => (
+            <Link
+              key={item.id}
+              href={`/list/${encodeURIComponent(item.name)}`}
+              passHref
+            >
+              <Card
+                asChild
+                size="2"
+                style={{
+                  padding: "16px",
+                  height: "100%",
+                  cursor: "pointer",
+                  textDecoration: "none",
+                }}
+              >
+                <Flex direction="column" gap="3" style={{ height: "100%" }}>
+                  <Heading size="3">{item.name}</Heading>
+                  <Text size="2" color="gray">
+                    {item.description ?? "No description provided."}
+                  </Text>
+                </Flex>
+              </Card>
+            </Link>
+          ))}
+        </Grid>
+      ) : (
+        <Flex justify="center" align="center" height="80px">
+          <Text color="gray">No lists found. Create your first one above.</Text>
+        </Flex>
+      )}
       <Heading size="4">Search Results</Heading>
 
       {searchResults.length > 0 ? (
@@ -140,35 +180,6 @@ export default function Dashboard() {
       ) : (
         <Text color="gray">No movies found. Try another search.</Text>
       )}
-
-      <Heading size="4" mt="6">
-        My Lists
-      </Heading>
-
-      <Grid columns={{ initial: "1", sm: "2", md: "3" }} gap="4">
-        {isLoading ? (
-          <Spinner size="3" />
-        ) : myLists?.length ? (
-          myLists.map((item) => (
-            <Link
-              href={`/list/${encodeURIComponent(item.name)}`}
-              key={item.id}
-              passHref
-            >
-              <Card asChild>
-                <a>
-                  <Flex direction="column" gap="2">
-                    <Heading size="3">{item.name}</Heading>
-                    <Text>{item.description}</Text>
-                  </Flex>
-                </a>
-              </Card>
-            </Link>
-          ))
-        ) : (
-          <Text>No lists found. Please create a new list.</Text>
-        )}
-      </Grid>
     </Flex>
   );
 }

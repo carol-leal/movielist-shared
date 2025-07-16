@@ -4,12 +4,12 @@ import {
   Avatar,
   Text,
   Flex,
-  Grid,
-  Heading,
-  Inset,
   Popover,
+  Box,
+  Separator,
+  Button,
 } from "@radix-ui/themes";
-import { UserIcon } from "@phosphor-icons/react";
+import { PersonIcon, EnterIcon, ExitIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 
 export function UserAvatar({
@@ -19,24 +19,74 @@ export function UserAvatar({
   image?: string;
   session: boolean;
 }) {
-  console.log(session);
   return (
     <Popover.Root>
       <Popover.Trigger>
-        <Flex>
+        <Button
+          variant="ghost"
+          radius="full"
+          size="2"
+          style={{ padding: 0, width: 36, height: 36 }}
+        >
           <Avatar
             src={image}
-            alt="User Avatar"
-            fallback={<UserIcon />}
+            fallback={<PersonIcon />}
             radius="full"
+            size="2"
+            alt="User avatar"
           />
-        </Flex>
+        </Button>
       </Popover.Trigger>
-      <Popover.Content>
-        <Flex>
-          <Link href={session ? "/api/auth/signout" : "/api/auth/signin"}>
-            {session ? "Sign out" : "Sign in"}
-          </Link>
+
+      <Popover.Content
+        align="end"
+        sideOffset={8}
+        style={{
+          padding: "12px",
+          minWidth: "160px",
+          borderRadius: "8px",
+        }}
+      >
+        <Flex direction="column" gap="3">
+          <Text size="2" weight="medium">
+            {session ? "Logged in" : "Not logged in"}
+          </Text>
+
+          <Separator />
+
+          <Box>
+            <Link
+              href={session ? "/api/auth/signout" : "/api/auth/signin"}
+              passHref
+            >
+              <Button
+                variant="solid"
+                size="2"
+                color={session ? "red" : "blue"}
+                style={{ width: "100%" }}
+              >
+                {session ? (
+                  <>
+                    <ExitIcon
+                      width={16}
+                      height={16}
+                      style={{ marginRight: 6 }}
+                    />
+                    Sign out
+                  </>
+                ) : (
+                  <>
+                    <EnterIcon
+                      width={16}
+                      height={16}
+                      style={{ marginRight: 6 }}
+                    />
+                    Sign in
+                  </>
+                )}
+              </Button>
+            </Link>
+          </Box>
         </Flex>
       </Popover.Content>
     </Popover.Root>

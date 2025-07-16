@@ -1,4 +1,3 @@
-// src/app/page.tsx
 import { auth } from "~/server/auth";
 import { api } from "~/trpc/server";
 import { HydrateClient } from "~/trpc/server";
