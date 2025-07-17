@@ -5,16 +5,17 @@ import { db } from "~/server/db";
 export default async function JoinSharedListPage({
   searchParams,
 }: {
-  searchParams: { token?: string };
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const resolvedSearchParams = await searchParams;
   const session = await auth();
 
   if (!session?.user) {
     redirect("/api/auth/signin");
   }
 
-  const userId = session.user.id;
-  const token = searchParams.token;
+  const rawToken = resolvedSearchParams.token;
+  const token = Array.isArray(rawToken) ? rawToken[0] : rawToken;
 
   if (!token) {
     return <div>Invalid or missing token.</div>;
@@ -31,15 +32,15 @@ export default async function JoinSharedListPage({
   const existingShare = await db.listShare.findFirst({
     where: {
       listId: list.id,
-      userId,
+      userId: session.user.id,
     },
   });
 
-  if (!existingShare && list.createdById !== userId) {
+  if (!existingShare && list.createdById !== session.user.id) {
     await db.listShare.create({
       data: {
         listId: list.id,
-        userId,
+        userId: session.user.id,
       },
     });
   }
