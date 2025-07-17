@@ -34,17 +34,6 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  lists         List[]
-  sessions      Session[]
-}
-
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -53,29 +42,80 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String?       @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  createdLists  List[]        @relation("CreatedLists")
+  sharedLists   ListShare[]
+  ratings       MovieRating[]
+  addedMovies   ListMovie[]   @relation("UserAddedMovies")
+}
+
 model List {
-  id          Int      @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  sharedWith  String[] @default([])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  movies      Movie[]  @relation("ListMovies")
+  createdBy   User        @relation("CreatedLists", fields: [createdById], references: [id])
+  sharedWith  ListShare[]
+  movies      ListMovie[]
 
   @@index([name])
 }
 
 model Movie {
-  id          Int       @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   title       String
   overview    String?
   releaseDate DateTime?
   posterPath  String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lists       List[]    @relation("ListMovies")
+  genres String[]
+  status      String?
+  tmdbId      Int         @unique
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  listEntries ListMovie[]
+}
 
-  @@index([title])
+model ListShare {
+  id     Int    @id @default(autoincrement())
+  listId Int
+  userId String
+  list   List   @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+}
+
+model ListMovie {
+  id        Int             @id @default(autoincrement())
+  listId    Int
+  movieId   Int
+  addedById String
+  status    String          @default("Pending")
+  addedBy   User            @relation("UserAddedMovies", fields: [addedById], references: [id])
+  list      List            @relation(fields: [listId], references: [id], onDelete: Cascade)
+  movie     Movie           @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  ratings   MovieRating[]   @relation("ListMovieRatings")
+
+  @@unique([listId, movieId]) 
+}
+
+
+model MovieRating {
+  id          Int       @id @default(autoincrement())
+  listMovieId Int
+  userId      String
+  rating      Float
+  listMovie   ListMovie @relation("ListMovieRatings", fields: [listMovieId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listMovieId, userId])
 }

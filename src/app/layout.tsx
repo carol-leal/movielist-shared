@@ -9,6 +9,7 @@ import { Container, Flex, Heading, Theme, ThemePanel } from "@radix-ui/themes";
 import { UserAvatar } from "./_components/userAvatar";
 import { auth } from "~/server/auth";
 import { api } from "~/trpc/server";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -28,19 +29,21 @@ export default async function RootLayout({
     <html lang="en">
       <body>
         <TRPCReactProvider>
-          <Theme appearance="dark">
-            <Container>
-              <Flex justify="between" align="center" gap="4">
-                <Heading>Movie List App</Heading>
-                <UserAvatar
-                  image={session?.user.image ?? undefined}
-                  session={!!session}
-                />
-              </Flex>
-              {/*<ThemePanel />*/}
-              {children}
-            </Container>
-          </Theme>
+          <SessionProvider>
+            <Theme appearance="dark">
+              <Container>
+                <Flex justify="between" align="center" gap="4">
+                  <Heading>Movie List App</Heading>
+                  <UserAvatar
+                    image={session?.user.image ?? undefined}
+                    session={!!session}
+                  />
+                </Flex>
+                {/*<ThemePanel />*/}
+                {children}
+              </Container>
+            </Theme>
+          </SessionProvider>
         </TRPCReactProvider>
       </body>
     </html>

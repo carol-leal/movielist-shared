@@ -1,3 +1,6 @@
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "~/server/api/root";
+
 export type Movie = {
   id: number;
   title: string;
@@ -21,3 +24,6 @@ export type SearchGenreResponse = {
     name: string;
   }[];
 };
+
+type RouterOutput = inferRouterOutputs<AppRouter>;
+export type MovieWithExtras = RouterOutput["movie"]["getAll"][number];
