@@ -10,8 +10,9 @@ export default async function Page({
   params: Promise<{ slug: string; listId: string }>;
 }) {
   const { slug, listId } = await params;
+
   const numericListId = parseInt(listId, 10);
-  const movieData = await api.movie.getAll();
+  const movieData = await api.movie.getAll({ listId: numericListId });
 
   return (
     <Flex direction="column" gap="4">

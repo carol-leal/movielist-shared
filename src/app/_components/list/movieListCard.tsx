@@ -10,6 +10,7 @@ import {
   Button,
   Callout,
   TextField,
+  Badge,
 } from "@radix-ui/themes";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
@@ -23,7 +24,7 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
   const utils = api.useUtils();
   const { data: session } = useSession();
   const [message, setMessage] = useState<string | null>(null);
-
+  const [showRatingInput, setShowRatingInput] = useState(false);
   const [userRating, setUserRating] = useState<number | "">(getInitialRating());
 
   function getInitialRating() {
@@ -49,6 +50,7 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
     onSuccess: async () => {
       await utils.movie.getAll.invalidate();
       setMessage("Rating saved.");
+      setShowRatingInput(false);
     },
   });
 
@@ -76,10 +78,12 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
     });
   };
 
+  const userHasRated = movie.ratings.find((r) => r.userId === session?.user.id);
+
   return (
     <Popover.Root>
       <Popover.Trigger>
-        <Card size="2" style={{ cursor: "pointer" }}>
+        <Card size="2" style={{ cursor: "pointer", position: "relative" }}>
           <Inset clip="padding-box" side="top" pb="current">
             <Image
               src={`https://image.tmdb.org/t/p/w500${movie.movie.posterPath}`}
@@ -93,15 +97,132 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
             <Heading size="3" mb="1">
               {movie.movie.title}
             </Heading>
-            <Text size="1" color="gray">
-              Added by: {movie.addedBy?.name ?? "Unknown"}
+
+            <Flex align="center" justify="between" mb="1">
+              <Text size="1" color="gray">
+                Added by: {movie.addedBy?.name ?? "Unknown"}
+              </Text>
+              <Badge color={movie.status === "Watched" ? "green" : "orange"}>
+                {movie.status}
+              </Badge>
+            </Flex>
+
+            {/* Ratings Summary */}
+            <Text size="1" mt="2">
+              Ratings:
             </Text>
-            <Text size="1" color="gray">
-              Status: {movie.status || "Pending"}
-            </Text>
+            <Flex direction="column" gap="1">
+              {movie.ratings?.length > 0 ? (
+                movie.ratings.map((r) => (
+                  <Text size="1" key={r.userId}>
+                    {r.user?.name ?? "Unknown"}: {r.rating}/10
+                  </Text>
+                ))
+              ) : (
+                <Text size="1" color="gray">
+                  No ratings yet
+                </Text>
+              )}
+            </Flex>
+
+            {/* Add/Edit Rating */}
+            <Box mt="2">
+              {showRatingInput ? (
+                <Flex gap="2" align="center">
+                  <TextField.Root
+                    value={userRating}
+                    onChange={(e) => {
+                      const input = e.target.value;
+                      if (input === "") {
+                        setUserRating("");
+                        return;
+                      }
+
+                      const val = parseFloat(input);
+                      if (!Number.isNaN(val)) {
+                        setUserRating(val);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (typeof userRating === "number") {
+                        setUserRating(Math.min(Math.max(userRating, 0.1), 10));
+                      }
+                    }}
+                    placeholder="0–10"
+                    style={{ width: "60px" }}
+                    type="number"
+                    step="0.1"
+                  />
+
+                  <Button
+                    size="1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRate();
+                    }}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    size="1"
+                    variant="soft"
+                    color="gray"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowRatingInput(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </Flex>
+              ) : (
+                <Button
+                  size="1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRatingInput(true);
+                  }}
+                >
+                  {userHasRated ? "Edit Rating" : "Add Rating"}
+                </Button>
+              )}
+            </Box>
+
+            {/* Actions */}
+            <Flex mt="3" gap="2">
+              <Button
+                size="1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleStatus();
+                }}
+              >
+                Mark as {movie.status === "Watched" ? "Pending" : "Watched"}
+              </Button>
+              <Button
+                size="1"
+                variant="soft"
+                color="red"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete();
+                }}
+              >
+                Delete
+              </Button>
+            </Flex>
           </Box>
+          {message && (
+            <Callout.Root mt="3" color="green" variant="soft">
+              <Callout.Icon>
+                <InfoCircledIcon />
+              </Callout.Icon>
+              <Callout.Text>{message}</Callout.Text>
+            </Callout.Root>
+          )}
         </Card>
       </Popover.Trigger>
+
       <Popover.Content style={{ maxWidth: 320 }}>
         <Heading size="4" mb="2">
           {movie.movie.title}
@@ -115,65 +236,6 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
               : null) ?? "Unknown"}
           </Text>
         </Box>
-        <Box mt="2">
-          <Text size="1">Added by: {movie.addedBy?.name ?? "Unknown"}</Text>
-          <Text size="1">Status: {movie.status || "Pending"}</Text>
-
-          <Text size="1" mt="2">
-            Ratings:
-          </Text>
-          <Flex direction="column" gap="1">
-            {movie.ratings?.length > 0 ? (
-              movie.ratings.map((r) => (
-                <Text size="1" key={r.userId}>
-                  {r.user.name}: {r.rating}/10
-                </Text>
-              ))
-            ) : (
-              <Text size="1" color="gray">
-                No ratings yet
-              </Text>
-            )}
-          </Flex>
-        </Box>
-
-        <Box mt="2">
-          <Text size="1">Your rating:</Text>
-          <Flex gap="2" align="center" mt="1">
-            <TextField.Root
-              value={userRating}
-              onChange={(e) => {
-                const val = parseInt(e.target.value, 10);
-                setUserRating(
-                  Number.isNaN(val) ? "" : Math.min(Math.max(val, 1), 10),
-                );
-              }}
-              placeholder="1–10"
-              style={{ width: "60px" }}
-            />
-            <Button onClick={handleRate} size="1">
-              Save
-            </Button>
-          </Flex>
-        </Box>
-
-        <Flex mt="3" gap="2" wrap="wrap">
-          <Button size="1" onClick={handleToggleStatus}>
-            Mark as {movie.status === "Watched" ? "Pending" : "Watched"}
-          </Button>
-          <Button size="1" color="red" onClick={handleDelete}>
-            Delete
-          </Button>
-        </Flex>
-
-        {message && (
-          <Callout.Root mt="3" color="green" variant="soft">
-            <Callout.Icon>
-              <InfoCircledIcon />
-            </Callout.Icon>
-            <Callout.Text>{message}</Callout.Text>
-          </Callout.Root>
-        )}
       </Popover.Content>
     </Popover.Root>
   );

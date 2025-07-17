@@ -3,6 +3,7 @@ import { Text, Heading, Flex, Grid, Card, Spinner } from "@radix-ui/themes";
 import Link from "next/link";
 import { api as apiReact } from "~/trpc/react";
 import NewList from "./dashboard/newList";
+import CopyShareLinkButton from "./dashboard/copyShareLinkButton";
 
 export default function Dashboard() {
   const utils = apiReact.useUtils();
@@ -51,6 +52,7 @@ export default function Dashboard() {
                   <Text size="2" color="gray">
                     {item.description ?? "No description provided."}
                   </Text>
+                  <CopyShareLinkButton listId={item.id} />
                 </Flex>
               </Card>
             </Link>

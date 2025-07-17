@@ -2,23 +2,22 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 export const movieRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.listMovie.findMany({
-      include: {
-        movie: true,
-        addedBy: {
-          select: { name: true },
-        },
-        ratings: {
-          include: {
-            user: {
-              select: { name: true },
+  getAll: protectedProcedure
+    .input(z.object({ listId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.listMovie.findMany({
+        where: { listId: input.listId },
+        include: {
+          movie: true,
+          addedBy: true,
+          ratings: {
+            include: {
+              user: true,
             },
           },
         },
-      },
-    });
-  }),
+      });
+    }),
 
   addToList: protectedProcedure
     .input(

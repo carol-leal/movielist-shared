@@ -67,6 +67,8 @@ model List {
   sharedWith  ListShare[]
   movies      ListMovie[]
 
+  shareToken String? @unique
+
   @@index([name])
 }
 
