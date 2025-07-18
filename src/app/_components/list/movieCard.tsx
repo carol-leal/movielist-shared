@@ -207,7 +207,7 @@ export default function MovieCard({
               onClick={() => handleAddToList("Pending")}
             >
               <ClockIcon width="16" height="16" />
-              Watchlist
+              Pending
             </Button>
             <Button
               variant="soft"

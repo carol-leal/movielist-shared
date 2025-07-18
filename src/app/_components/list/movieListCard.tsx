@@ -298,7 +298,7 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
                 disabled={updateStatus.isPending || movie.status === "Pending"}
               >
                 <ClockIcon width="12" height="12" />
-                Watchlist
+                Pending
               </Button>
               <Button
                 size="1"

@@ -89,10 +89,10 @@ export default function ClientMovieList({
             <Tabs.List size="2">
               <Tabs.Trigger value="all">All ({movies.length})</Tabs.Trigger>
               <Tabs.Trigger value="pending">
-                Watchlist ({pendingMovies.length})
+                Pending ({pendingMovies.length})
               </Tabs.Trigger>
               <Tabs.Trigger value="watching">
-                Watching ({watchingMovies.length})
+                Currently Watching ({watchingMovies.length})
               </Tabs.Trigger>
               <Tabs.Trigger value="watched">
                 Watched ({watchedMovies.length})
@@ -122,7 +122,7 @@ export default function ClientMovieList({
                     ))}
                   </Grid>
                 ) : (
-                  <EmptyState message="No movies in your watchlist yet" />
+                  <EmptyState message="No movies in your pending watchlist yet" />
                 )}
               </Tabs.Content>
 
