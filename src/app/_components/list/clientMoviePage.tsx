@@ -31,6 +31,7 @@ export default function ClientMovieList({
   // Use the fresh data or fall back to initial
   const movies = movieData || initialMovieData;
   const pendingMovies = movies.filter((m) => m.status === "Pending");
+  const watchingMovies = movies.filter((m) => m.status === "Watching");
   const watchedMovies = movies.filter((m) => m.status === "Watched");
 
   return (
@@ -90,6 +91,9 @@ export default function ClientMovieList({
               <Tabs.Trigger value="pending">
                 Watchlist ({pendingMovies.length})
               </Tabs.Trigger>
+              <Tabs.Trigger value="watching">
+                Watching ({watchingMovies.length})
+              </Tabs.Trigger>
               <Tabs.Trigger value="watched">
                 Watched ({watchedMovies.length})
               </Tabs.Trigger>
@@ -119,6 +123,21 @@ export default function ClientMovieList({
                   </Grid>
                 ) : (
                   <EmptyState message="No movies in your watchlist yet" />
+                )}
+              </Tabs.Content>
+
+              <Tabs.Content value="watching">
+                {watchingMovies.length > 0 ? (
+                  <Grid
+                    columns={{ initial: "1", sm: "2", md: "3", lg: "4" }}
+                    gap="4"
+                  >
+                    {watchingMovies.map((movie) => (
+                      <MovieListCard key={movie.id} movie={movie} />
+                    ))}
+                  </Grid>
+                ) : (
+                  <EmptyState message="You're not currently watching any movies" />
                 )}
               </Tabs.Content>
 

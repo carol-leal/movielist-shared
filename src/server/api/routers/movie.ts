@@ -30,7 +30,7 @@ export const movieRouter = createTRPCRouter({
         posterPath: z.string().optional(),
         releaseDate: z.string().optional(),
         overview: z.string().optional(),
-        status: z.enum(["Pending", "Watched"]),
+        status: z.enum(["Pending", "Watched", "Watching"]),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -89,7 +89,7 @@ export const movieRouter = createTRPCRouter({
       z.object({
         listId: z.number(),
         movieId: z.number(),
-        status: z.enum(["Pending", "Watched"]),
+        status: z.enum(["Pending", "Watched", "Watching"]),
       }),
     )
     .mutation(async ({ ctx, input }) => {

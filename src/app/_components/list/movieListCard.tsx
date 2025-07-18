@@ -18,6 +18,7 @@ import {
   StarIcon,
   StarFilledIcon,
   PersonIcon,
+  PlayIcon,
 } from "@radix-ui/react-icons";
 import Image from "next/image";
 import { useState } from "react";
@@ -58,11 +59,13 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
     },
   });
 
-  const handleToggleStatus = () => {
+  const handleUpdateStatus = (
+    newStatus: "Pending" | "Watching" | "Watched",
+  ) => {
     updateStatus.mutate({
       listId: movie.listId,
       movieId: movie.movie.id,
-      status: movie.status === "Watched" ? "Pending" : "Watched",
+      status: newStatus,
     });
   };
 
@@ -142,7 +145,13 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
 
           {/* Status Badge */}
           <Badge
-            color={movie.status === "Watched" ? "green" : "orange"}
+            color={
+              movie.status === "Watched"
+                ? "green"
+                : movie.status === "Watching"
+                  ? "blue"
+                  : "orange"
+            }
             size="2"
             variant="solid"
             style={{
@@ -152,7 +161,9 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
               backgroundColor:
                 movie.status === "Watched"
                   ? "var(--green-9)"
-                  : "var(--orange-9)",
+                  : movie.status === "Watching"
+                    ? "var(--blue-9)"
+                    : "var(--orange-9)",
               color: "white",
               fontWeight: "600",
               boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
@@ -160,6 +171,8 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
           >
             {movie.status === "Watched" ? (
               <CheckIcon width="12" height="12" />
+            ) : movie.status === "Watching" ? (
+              <PlayIcon width="12" height="12" />
             ) : (
               <ClockIcon width="12" height="12" />
             )}
@@ -252,44 +265,64 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
           </Box>
 
           {/* Actions */}
-          <Flex gap="1" mt="2" wrap="wrap">
-            <Button
-              size="1"
-              variant="soft"
-              style={{ flex: "1 1 auto", minWidth: "60px", fontSize: "12px" }}
-              onClick={() => setShowRatingDialog(true)}
-            >
-              <StarIcon width="12" height="12" />
-              {userHasRated ? "Edit" : "Rate"}
-            </Button>
-            <Button
-              size="1"
-              variant="soft"
-              style={{ flex: "1 1 auto", minWidth: "80px", fontSize: "12px" }}
-              onClick={handleToggleStatus}
-              disabled={updateStatus.isPending}
-            >
-              {movie.status === "Watched" ? (
-                <>
-                  <ClockIcon width="12" height="12" />
-                  Watchlist
-                </>
-              ) : (
-                <>
-                  <CheckIcon width="12" height="12" />
-                  Watched
-                </>
-              )}
-            </Button>
-            <Button
-              size="1"
-              variant="soft"
-              color="red"
-              style={{ padding: "0 8px" }}
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              <TrashIcon width="12" height="12" />
-            </Button>
+          <Flex direction="column" gap="1" mt="2">
+            <Flex gap="1" wrap="wrap">
+              <Button
+                size="1"
+                variant="soft"
+                style={{ flex: "1 1 auto", minWidth: "60px", fontSize: "12px" }}
+                onClick={() => setShowRatingDialog(true)}
+              >
+                <StarIcon width="12" height="12" />
+                {userHasRated ? "Edit" : "Rate"}
+              </Button>
+              <Button
+                size="1"
+                variant="soft"
+                color="red"
+                style={{ padding: "0 8px" }}
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <TrashIcon width="12" height="12" />
+              </Button>
+            </Flex>
+
+            {/* Status buttons */}
+            <Flex gap="1" wrap="wrap">
+              <Button
+                size="1"
+                variant={movie.status === "Pending" ? "solid" : "soft"}
+                color="orange"
+                style={{ flex: "1 1 auto", minWidth: "70px", fontSize: "11px" }}
+                onClick={() => handleUpdateStatus("Pending")}
+                disabled={updateStatus.isPending || movie.status === "Pending"}
+              >
+                <ClockIcon width="12" height="12" />
+                Watchlist
+              </Button>
+              <Button
+                size="1"
+                variant={movie.status === "Watching" ? "solid" : "soft"}
+                color="blue"
+                style={{ flex: "1 1 auto", minWidth: "70px", fontSize: "11px" }}
+                onClick={() => handleUpdateStatus("Watching")}
+                disabled={updateStatus.isPending || movie.status === "Watching"}
+              >
+                <PlayIcon width="12" height="12" />
+                Watching
+              </Button>
+              <Button
+                size="1"
+                variant={movie.status === "Watched" ? "solid" : "soft"}
+                color="green"
+                style={{ flex: "1 1 auto", minWidth: "70px", fontSize: "11px" }}
+                onClick={() => handleUpdateStatus("Watched")}
+                disabled={updateStatus.isPending || movie.status === "Watched"}
+              >
+                <CheckIcon width="12" height="12" />
+                Watched
+              </Button>
+            </Flex>
           </Flex>
         </Flex>
       </Card>

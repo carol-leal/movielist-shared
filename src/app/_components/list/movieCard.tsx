@@ -15,7 +15,12 @@ import type { Movie } from "~/types/general";
 import Image from "next/image";
 import { api } from "~/trpc/react";
 import { useState } from "react";
-import { CheckIcon, ClockIcon } from "@radix-ui/react-icons";
+import {
+  CheckIcon,
+  PlusIcon,
+  ClockIcon,
+  PlayIcon,
+} from "@radix-ui/react-icons";
 
 export default function MovieCard({
   movie,
@@ -63,7 +68,7 @@ export default function MovieCard({
     overview: movie.overview ?? undefined,
   };
 
-  const handleAddToList = (status: "Pending" | "Watched") => {
+  const handleAddToList = (status: "Pending" | "Watching" | "Watched") => {
     if (!isLoading) {
       addToList.mutate({ ...basePayload, status });
     }
@@ -193,19 +198,31 @@ export default function MovieCard({
         </Box>
 
         {/* Action Buttons */}
-        <Flex gap="2" mt="4">
-          <Button
-            variant="soft"
-            style={{ flex: 1 }}
-            disabled={isLoading}
-            onClick={() => handleAddToList("Pending")}
-          >
-            <ClockIcon width="16" height="16" />
-            Watchlist
-          </Button>
+        <Flex gap="2" mt="4" direction="column">
+          <Flex gap="2">
+            <Button
+              variant="soft"
+              style={{ flex: 1 }}
+              disabled={isLoading}
+              onClick={() => handleAddToList("Pending")}
+            >
+              <ClockIcon width="16" height="16" />
+              Watchlist
+            </Button>
+            <Button
+              variant="soft"
+              color="blue"
+              style={{ flex: 1 }}
+              disabled={isLoading}
+              onClick={() => handleAddToList("Watching")}
+            >
+              <PlayIcon width="16" height="16" />
+              Watching
+            </Button>
+          </Flex>
           <Button
             variant="solid"
-            style={{ flex: 1 }}
+            style={{ width: "100%" }}
             disabled={isLoading}
             onClick={() => handleAddToList("Watched")}
           >
