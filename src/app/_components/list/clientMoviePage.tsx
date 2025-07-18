@@ -6,18 +6,32 @@ import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import MovieListCard from "~/app/_components/list/movieListCard";
 import MovieSearch from "~/app/_components/list/movieSearch";
 import type { MovieWithExtras } from "~/types/general";
+import { api as apiReact } from "~/trpc/react";
 
-export default function ClientMoviePage({
-  movieData,
+export default function ClientMovieList({
+  initialMovieData,
   slug,
   listId,
 }: {
-  movieData: MovieWithExtras[];
+  initialMovieData: MovieWithExtras[];
   slug: string;
   listId: number;
 }) {
-  const pendingMovies = movieData.filter((m) => m.status === "Pending");
-  const watchedMovies = movieData.filter((m) => m.status === "Watched");
+  // Use React Query with initial data from server
+  const { data: movieData } = apiReact.movie.getAll.useQuery(
+    { listId },
+    {
+      initialData: initialMovieData,
+      // This ensures the data stays fresh
+      refetchOnMount: false,
+      refetchOnWindowFocus: true,
+    },
+  );
+
+  // Use the fresh data or fall back to initial
+  const movies = movieData || initialMovieData;
+  const pendingMovies = movies.filter((m) => m.status === "Pending");
+  const watchedMovies = movies.filter((m) => m.status === "Watched");
 
   return (
     <Box style={{ minHeight: "100vh", backgroundColor: "var(--gray-1)" }}>
@@ -58,7 +72,7 @@ export default function ClientMoviePage({
 
           <Flex align="center" gap="3">
             <Badge size="2" variant="soft">
-              {movieData.length} movie{movieData.length !== 1 ? "s" : ""}
+              {movies.length} movie{movies.length !== 1 ? "s" : ""}
             </Badge>
           </Flex>
         </Flex>
@@ -69,10 +83,10 @@ export default function ClientMoviePage({
         </Box>
 
         {/* Movies Grid with Tabs */}
-        {movieData.length > 0 ? (
+        {movies.length > 0 ? (
           <Tabs.Root defaultValue="all">
             <Tabs.List size="2">
-              <Tabs.Trigger value="all">All ({movieData.length})</Tabs.Trigger>
+              <Tabs.Trigger value="all">All ({movies.length})</Tabs.Trigger>
               <Tabs.Trigger value="pending">
                 Watchlist ({pendingMovies.length})
               </Tabs.Trigger>
@@ -87,7 +101,7 @@ export default function ClientMoviePage({
                   columns={{ initial: "1", sm: "2", md: "3", lg: "4" }}
                   gap="4"
                 >
-                  {movieData.map((movie) => (
+                  {movies.map((movie) => (
                     <MovieListCard key={movie.id} movie={movie} />
                   ))}
                 </Grid>
