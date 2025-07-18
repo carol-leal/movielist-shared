@@ -1,68 +1,100 @@
 "use client";
-import { Form } from "radix-ui";
-import { Popover, Button, TextArea, Flex, Text } from "@radix-ui/themes";
+import {
+  Dialog,
+  Button,
+  TextArea,
+  Flex,
+  Text,
+  TextField,
+} from "@radix-ui/themes";
+import { PlusIcon } from "@radix-ui/react-icons";
+import { useState } from "react";
 
 export default function NewList({
   createList,
 }: {
-  createList: { mutate: (data: { name: string; description: string }) => void };
+  createList: {
+    mutate: (data: { name: string; description: string }) => void;
+    isPending: boolean;
+  };
 }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    createList.mutate({
+      name: name.trim(),
+      description: description.trim(),
+    });
+
+    // Reset form and close dialog
+    setName("");
+    setDescription("");
+    setOpen(false);
+  };
+
   return (
-    <Popover.Root>
-      <Popover.Trigger>
-        <Button variant="soft">New list</Button>
-      </Popover.Trigger>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger>
+        <Button size="3">
+          <PlusIcon width="16" height="16" />
+          New List
+        </Button>
+      </Dialog.Trigger>
 
-      <Popover.Content
-        width="360px"
-        style={{
-          padding: "16px",
-          borderRadius: "8px",
-          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.2)",
-        }}
-      >
-        <Flex direction="column" gap="4">
-          <Form.Root
-            onSubmit={async (event) => {
-              const formData = new FormData(event.currentTarget);
-              const name = formData.get("name") as string;
-              const description = formData.get("description") as string;
-              createList.mutate({ name, description });
-              event.currentTarget.reset();
-            }}
-          >
-            <Flex direction="column" gap="3">
-              <Form.Field name="name">
-                <Flex direction="column" gap="1">
-                  <Form.Label>
-                    <Text size="1">Name</Text>
-                  </Form.Label>
-                  <Form.Control asChild>
-                    <input placeholder="Enter list name" required />
-                  </Form.Control>
-                </Flex>
-              </Form.Field>
+      <Dialog.Content style={{ maxWidth: 450 }}>
+        <Dialog.Title>Create New List</Dialog.Title>
+        <Dialog.Description size="2" mb="4">
+          Give your movie list a name and optional description.
+        </Dialog.Description>
 
-              <Form.Field name="description">
-                <Flex direction="column" gap="1">
-                  <Form.Label>
-                    <Text size="1">Description</Text>
-                  </Form.Label>
-                  <Form.Control asChild>
-                    <TextArea placeholder="Optional description..." />
-                  </Form.Control>
-                </Flex>
-              </Form.Field>
+        <form onSubmit={handleSubmit}>
+          <Flex direction="column" gap="4">
+            <label>
+              <Text as="div" size="2" mb="1" weight="medium">
+                List Name *
+              </Text>
+              <TextField.Root
+                placeholder="e.g., Weekend Watchlist, 80s Classics"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoFocus
+              />
+            </label>
 
-              <Form.Submit asChild>
-                <Button style={{ marginTop: "12px" }} variant="solid">
-                  Create List
-                </Button>
-              </Form.Submit>
-            </Flex>
-          </Form.Root>
-        </Flex>
-      </Popover.Content>
-    </Popover.Root>
+            <label>
+              <Text as="div" size="2" mb="1" weight="medium">
+                Description
+              </Text>
+              <TextArea
+                placeholder="What's this list about? (optional)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                style={{ minHeight: 80 }}
+              />
+            </label>
+          </Flex>
+
+          <Flex gap="3" mt="4" justify="end">
+            <Dialog.Close>
+              <Button variant="soft" color="gray" type="button">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Button
+              type="submit"
+              disabled={!name.trim() || createList.isPending}
+            >
+              {createList.isPending ? "Creating..." : "Create List"}
+            </Button>
+          </Flex>
+        </form>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 }

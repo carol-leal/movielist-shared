@@ -1,18 +1,24 @@
 "use client";
 import {
-  Popover,
   Card,
-  Inset,
   Box,
   Heading,
   Flex,
   Text,
   Button,
-  Callout,
-  TextField,
   Badge,
+  TextField,
+  Dialog,
+  Avatar,
 } from "@radix-ui/themes";
-import { InfoCircledIcon } from "@radix-ui/react-icons";
+import {
+  TrashIcon,
+  CheckIcon,
+  ClockIcon,
+  StarIcon,
+  StarFilledIcon,
+  PersonIcon,
+} from "@radix-ui/react-icons";
 import Image from "next/image";
 import { useState } from "react";
 import { api } from "~/trpc/react";
@@ -23,9 +29,9 @@ import type { MovieWithExtras } from "~/types/general";
 export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
   const utils = api.useUtils();
   const { data: session } = useSession();
-  const [message, setMessage] = useState<string | null>(null);
-  const [showRatingInput, setShowRatingInput] = useState(false);
+  const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [userRating, setUserRating] = useState<number | "">(getInitialRating());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   function getInitialRating() {
     const me = movie.ratings.find((r) => r.userId === session?.user.id);
@@ -34,23 +40,21 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
 
   const updateStatus = api.movie.updateStatus.useMutation({
     onSuccess: async () => {
-      await utils.movie.getAll.invalidate();
-      setMessage("Status updated.");
+      await utils.movie.getAll.invalidate({ listId: movie.listId });
     },
   });
 
   const removeFromList = api.movie.removeFromList.useMutation({
     onSuccess: async () => {
-      await utils.movie.getAll.invalidate();
-      setMessage("Movie removed.");
+      await utils.movie.getAll.invalidate({ listId: movie.listId });
+      setShowDeleteDialog(false);
     },
   });
 
   const rateMovie = api.movie.rateMovie.useMutation({
     onSuccess: async () => {
-      await utils.movie.getAll.invalidate();
-      setMessage("Rating saved.");
-      setShowRatingInput(false);
+      await utils.movie.getAll.invalidate({ listId: movie.listId });
+      setShowRatingDialog(false);
     },
   });
 
@@ -79,164 +83,301 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
   };
 
   const userHasRated = movie.ratings.find((r) => r.userId === session?.user.id);
+  const averageRating =
+    movie.ratings.length > 0
+      ? movie.ratings.reduce((sum, r) => sum + r.rating, 0) /
+        movie.ratings.length
+      : 0;
 
   return (
-    <Popover.Root>
-      <Popover.Trigger>
-        <Card size="2" style={{ cursor: "pointer", position: "relative" }}>
-          <Inset clip="padding-box" side="top" pb="current">
+    <>
+      <Card
+        size="2"
+        style={{
+          overflow: "hidden",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          transition: "all 0.2s ease",
+          border: "1px solid var(--gray-5)",
+        }}
+        className="movie-list-card"
+      >
+        {/* Poster */}
+        <Box style={{ position: "relative", height: "240px", flexShrink: 0 }}>
+          {movie.movie.posterPath ? (
             <Image
               src={`https://image.tmdb.org/t/p/w500${movie.movie.posterPath}`}
               alt={movie.movie.title}
-              width={500}
-              height={300}
-              style={{ objectFit: "cover", width: "100%", height: 160 }}
+              fill
+              style={{ objectFit: "cover" }}
             />
-          </Inset>
-          <Box p="3">
-            <Heading size="3" mb="1">
-              {movie.movie.title}
-            </Heading>
-
-            <Flex align="center" justify="between" mb="1">
-              <Text size="1" color="gray">
-                Added by: {movie.addedBy?.name ?? "Unknown"}
-              </Text>
-              <Badge color={movie.status === "Watched" ? "green" : "orange"}>
-                {movie.status}
-              </Badge>
+          ) : (
+            <Flex
+              align="center"
+              justify="center"
+              style={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: "var(--gray-3)",
+              }}
+            >
+              <Text color="gray">No poster</Text>
             </Flex>
-
-            {/* Ratings Summary */}
-            <Text size="1" mt="2">
-              Ratings:
-            </Text>
-            <Flex direction="column" gap="1">
-              {movie.ratings?.length > 0 ? (
-                movie.ratings.map((r) => (
-                  <Text size="1" key={r.userId}>
-                    {r.user?.name ?? "Unknown"}: {r.rating}/10
-                  </Text>
-                ))
-              ) : (
-                <Text size="1" color="gray">
-                  No ratings yet
-                </Text>
-              )}
-            </Flex>
-
-            {/* Add/Edit Rating */}
-            <Box mt="2">
-              {showRatingInput ? (
-                <Flex gap="2" align="center">
-                  <TextField.Root
-                    value={userRating}
-                    onChange={(e) => {
-                      const input = e.target.value;
-                      if (input === "") {
-                        setUserRating("");
-                        return;
-                      }
-
-                      const val = parseFloat(input);
-                      if (!Number.isNaN(val)) {
-                        setUserRating(val);
-                      }
-                    }}
-                    onBlur={() => {
-                      if (typeof userRating === "number") {
-                        setUserRating(Math.min(Math.max(userRating, 0.1), 10));
-                      }
-                    }}
-                    placeholder="0–10"
-                    style={{ width: "60px" }}
-                    type="number"
-                    step="0.1"
-                  />
-
-                  <Button
-                    size="1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRate();
-                    }}
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    size="1"
-                    variant="soft"
-                    color="gray"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowRatingInput(false);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </Flex>
-              ) : (
-                <Button
-                  size="1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowRatingInput(true);
-                  }}
-                >
-                  {userHasRated ? "Edit Rating" : "Add Rating"}
-                </Button>
-              )}
-            </Box>
-
-            {/* Actions */}
-            <Flex mt="3" gap="2">
-              <Button
-                size="1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleToggleStatus();
-                }}
-              >
-                Mark as {movie.status === "Watched" ? "Pending" : "Watched"}
-              </Button>
-              <Button
-                size="1"
-                variant="soft"
-                color="red"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete();
-                }}
-              >
-                Delete
-              </Button>
-            </Flex>
-          </Box>
-          {message && (
-            <Callout.Root mt="3" color="green" variant="soft">
-              <Callout.Icon>
-                <InfoCircledIcon />
-              </Callout.Icon>
-              <Callout.Text>{message}</Callout.Text>
-            </Callout.Root>
           )}
-        </Card>
-      </Popover.Trigger>
 
-      <Popover.Content style={{ maxWidth: 320 }}>
-        <Heading size="4" mb="2">
-          {movie.movie.title}
-        </Heading>
-        <Text size="2">{movie.movie.overview ?? "No description."}</Text>
-        <Box mt="2">
-          <Text size="1" color="gray">
-            Release date:{" "}
-            {(movie.movie.releaseDate
-              ? formatDate(movie.movie.releaseDate.toString())
-              : null) ?? "Unknown"}
-          </Text>
+          {/* Gradient overlay for badge visibility */}
+          <Box
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "80px",
+              background:
+                "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%)",
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* Status Badge */}
+          <Badge
+            color={movie.status === "Watched" ? "green" : "orange"}
+            size="2"
+            variant="solid"
+            style={{
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+              backgroundColor:
+                movie.status === "Watched"
+                  ? "var(--green-9)"
+                  : "var(--orange-9)",
+              color: "white",
+              fontWeight: "600",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+            }}
+          >
+            {movie.status === "Watched" ? (
+              <CheckIcon width="12" height="12" />
+            ) : (
+              <ClockIcon width="12" height="12" />
+            )}
+            {movie.status}
+          </Badge>
         </Box>
-      </Popover.Content>
-    </Popover.Root>
+
+        {/* Content */}
+        <Flex direction="column" p="3" style={{ flexGrow: 1 }} gap="2">
+          <Heading size="2" style={{ lineHeight: 1.2 }}>
+            {movie.movie.title}
+          </Heading>
+
+          {/* Added by */}
+          <Flex align="center" gap="1">
+            <PersonIcon width="14" height="14" color="var(--gray-9)" />
+            <Text size="1" color="gray">
+              Added by {movie.addedBy?.name ?? "Unknown"}
+            </Text>
+          </Flex>
+
+          {/* Release Date */}
+          {movie.movie.releaseDate && (
+            <Text size="1" color="gray">
+              {new Date(movie.movie.releaseDate).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </Text>
+          )}
+
+          {/* Ratings Section */}
+          <Box
+            style={{
+              backgroundColor: "var(--gray-2)",
+              borderRadius: "6px",
+              padding: "6px 8px",
+              marginTop: "auto",
+            }}
+          >
+            <Flex justify="between" align="center" mb="1">
+              <Text size="1" weight="medium">
+                Ratings
+              </Text>
+              {averageRating > 0 && (
+                <Flex align="center" gap="1">
+                  <StarFilledIcon
+                    width="12"
+                    height="12"
+                    color="var(--amber-9)"
+                  />
+                  <Text size="1" weight="medium">
+                    {averageRating.toFixed(1)}
+                  </Text>
+                </Flex>
+              )}
+            </Flex>
+
+            {movie.ratings?.length > 0 ? (
+              <Flex direction="column" gap="1">
+                {movie.ratings.slice(0, 2).map((r) => (
+                  <Flex key={r.userId} justify="between" align="center">
+                    <Text size="1" style={{ fontSize: "11px" }}>
+                      {r.user?.name ?? "Unknown"}
+                    </Text>
+                    <Flex align="center" gap="1">
+                      <StarIcon width="10" height="10" />
+                      <Text
+                        size="1"
+                        weight="medium"
+                        style={{ fontSize: "11px" }}
+                      >
+                        {r.rating}/10
+                      </Text>
+                    </Flex>
+                  </Flex>
+                ))}
+                {movie.ratings.length > 2 && (
+                  <Text size="1" color="gray" style={{ fontSize: "11px" }}>
+                    +{movie.ratings.length - 2} more
+                  </Text>
+                )}
+              </Flex>
+            ) : (
+              <Text size="1" color="gray" style={{ fontSize: "11px" }}>
+                No ratings yet
+              </Text>
+            )}
+          </Box>
+
+          {/* Actions */}
+          <Flex gap="1" mt="2" wrap="wrap">
+            <Button
+              size="1"
+              variant="soft"
+              style={{ flex: "1 1 auto", minWidth: "60px", fontSize: "12px" }}
+              onClick={() => setShowRatingDialog(true)}
+            >
+              <StarIcon width="12" height="12" />
+              {userHasRated ? "Edit" : "Rate"}
+            </Button>
+            <Button
+              size="1"
+              variant="soft"
+              style={{ flex: "1 1 auto", minWidth: "80px", fontSize: "12px" }}
+              onClick={handleToggleStatus}
+              disabled={updateStatus.isPending}
+            >
+              {movie.status === "Watched" ? (
+                <>
+                  <ClockIcon width="12" height="12" />
+                  Watchlist
+                </>
+              ) : (
+                <>
+                  <CheckIcon width="12" height="12" />
+                  Watched
+                </>
+              )}
+            </Button>
+            <Button
+              size="1"
+              variant="soft"
+              color="red"
+              style={{ padding: "0 8px" }}
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <TrashIcon width="12" height="12" />
+            </Button>
+          </Flex>
+        </Flex>
+      </Card>
+
+      {/* Rating Dialog */}
+      <Dialog.Root open={showRatingDialog} onOpenChange={setShowRatingDialog}>
+        <Dialog.Content style={{ maxWidth: 450 }}>
+          <Dialog.Title>Rate {movie.movie.title}</Dialog.Title>
+          <Dialog.Description size="2" mb="4">
+            {movie.movie.overview ?? "No description available."}
+          </Dialog.Description>
+
+          <Flex direction="column" gap="3">
+            <Box>
+              <Text as="label" size="2" mb="1" weight="medium">
+                Your Rating
+              </Text>
+              <TextField.Root
+                value={userRating}
+                onChange={(e) => {
+                  const input = e.target.value;
+                  if (input === "") {
+                    setUserRating("");
+                    return;
+                  }
+                  const val = parseFloat(input);
+                  if (!Number.isNaN(val) && val >= 0 && val <= 10) {
+                    setUserRating(val);
+                  }
+                }}
+                placeholder="0-10"
+                type="number"
+                step="0.1"
+                min="0"
+                max="10"
+              />
+            </Box>
+          </Flex>
+
+          <Flex gap="3" mt="4" justify="end">
+            <Dialog.Close>
+              <Button variant="soft" color="gray">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Button
+              onClick={handleRate}
+              disabled={!userRating || rateMovie.isPending}
+            >
+              Save Rating
+            </Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog.Root open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <Dialog.Content style={{ maxWidth: 450 }}>
+          <Dialog.Title>Remove from list?</Dialog.Title>
+          <Dialog.Description size="2" mb="4">
+            Are you sure you want to remove &quot;{movie.movie.title}&quot; from
+            this list? This action cannot be undone.
+          </Dialog.Description>
+
+          <Flex gap="3" mt="4" justify="end">
+            <Dialog.Close>
+              <Button variant="soft" color="gray">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Button
+              color="red"
+              onClick={handleDelete}
+              disabled={removeFromList.isPending}
+            >
+              Remove
+            </Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
+
+      <style jsx>{`
+        .movie-list-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+          border-color: var(--accent-8);
+        }
+      `}</style>
+    </>
   );
 }
