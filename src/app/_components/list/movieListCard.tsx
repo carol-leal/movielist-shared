@@ -232,7 +232,7 @@ export default function MovieListCard({ movie }: { movie: MovieWithExtras }) {
           <Text size="1" color="gray">
             Release date:{" "}
             {(movie.movie.releaseDate
-              ? formatDate(movie.movie.releaseDate.toISOString?.())
+              ? formatDate(movie.movie.releaseDate.toString())
               : null) ?? "Unknown"}
           </Text>
         </Box>

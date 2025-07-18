@@ -19,11 +19,38 @@ export const listRouter = createTRPCRouter({
     }),
 
   getAll: protectedProcedure.query(async ({ ctx }) => {
-    const list = await ctx.db.list.findMany({
+    // Get both created lists and shared lists
+    const lists = await ctx.db.list.findMany({
       orderBy: { createdAt: "desc" },
-      where: { createdBy: { id: ctx.session.user.id } },
+      where: {
+        OR: [
+          { createdById: ctx.session.user.id },
+          {
+            sharedWith: {
+              some: {
+                userId: ctx.session.user.id,
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        sharedWith: {
+          select: {
+            userId: true,
+          },
+        },
+      },
     });
-    return list ?? null;
+
+    return lists ?? [];
   }),
 
   shareLink: protectedProcedure
